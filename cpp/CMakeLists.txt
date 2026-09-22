@@ -1,0 +1,23 @@
+cmake_minimum_required(VERSION 3.18)
+project(openLens LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+option(OPENLENS_ENABLE_ONNX "Build the ONNX Runtime tensor runner" OFF)
+set(ONNXRUNTIME_ROOT "" CACHE PATH "Extracted ONNX Runtime C/C++ SDK")
+
+add_library(openlens_core INTERFACE)
+target_include_directories(openlens_core INTERFACE include)
+add_executable(openlens_core_tests tests/core_tests.cpp)
+target_link_libraries(openlens_core_tests PRIVATE openlens_core)
+enable_testing()
+add_test(NAME core COMMAND openlens_core_tests)
+
+if(OPENLENS_ENABLE_ONNX)
+  find_path(ONNXRUNTIME_INCLUDE_DIR onnxruntime_cxx_api.h HINTS "${ONNXRUNTIME_ROOT}/include" REQUIRED)
+  find_library(ONNXRUNTIME_LIBRARY onnxruntime HINTS "${ONNXRUNTIME_ROOT}/lib" REQUIRED)
+  add_executable(openlens_ort src/ort_runner.cpp)
+  target_include_directories(openlens_ort PRIVATE "${ONNXRUNTIME_INCLUDE_DIR}")
+  target_link_libraries(openlens_ort PRIVATE openlens_core "${ONNXRUNTIME_LIBRARY}")
+endif()
